@@ -58,9 +58,9 @@ def user_list():
     return "<p>Logout page</p>"
 
 
-@app.get("/user/delete/<id>")
-def user_delete(id):
-    return "<p>Logout page </p>" + str(id)
+@app.get("/user/delete/<user_id>")
+def user_delete(user_id):
+    return "<p>Logout page </p>" + str(user_id)
 
 
 @app.post("/user/update")

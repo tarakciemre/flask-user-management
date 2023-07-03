@@ -12,7 +12,12 @@ app = Flask(__name__)
 # [ ] /user/update/{id}
 # [ ] /onlineusers
 
-def initializeDatabase():
+# TODO FOR JUNE 03
+# TODO: Complete the database inserts and deletes
+# TODO: Create a secure password saving with sha256 and salt
+
+
+def initialize_database():
     conn = psycopg2.connect(database="flask_db",
                             user="postgres",
                             password="1234",
@@ -29,32 +34,40 @@ def initializeDatabase():
     cur.close()
     conn.close()
 
-initializeDatabase()
+
+initialize_database()
+
 
 @app.route("/login")
 def login():
     return "<p>Login page</p>"
 
+
 @app.route("/logout")
 def logout():
     return "<p>Logout page</p>"
 
+
 @app.post("/user/create")
-def userCreate():
+def user_create():
     return "<p>Logout page</p>"
+
 
 @app.get("/user/list")
-def userList():
+def user_list():
     return "<p>Logout page</p>"
+
 
 @app.get("/user/delete/<id>")
-def userDelete(id):
+def user_delete(id):
     return "<p>Logout page </p>" + str(id)
 
+
 @app.post("/user/update")
-def userUpdate():
+def user_update():
     return "<p>Logout page</p>"
 
+
 @app.get("/onlineusers")
-def onlineUsers():
+def online_users():
     return "<p>Online Users</p>"

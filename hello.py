@@ -1,4 +1,5 @@
 from flask import Flask
+from flask import request
 import psycopg2
 
 app = Flask(__name__)
@@ -35,6 +36,24 @@ def initialize_database():
     conn.close()
 
 
+def get_all_users():
+    conn = psycopg2.connect(database="flask_db",
+                            user="postgres",
+                            password="1234",
+                            host="localhost", port="5432")
+    cur = conn.cursor()
+    cur.execute(
+        '''SELECT name
+        FROM usertable'''
+    )
+    result = cur.fetchall()
+    print(result)
+    conn.commit()
+    cur.close()
+    conn.close()
+    return result
+
+
 initialize_database()
 
 
@@ -50,12 +69,14 @@ def logout():
 
 @app.post("/user/create")
 def user_create():
+    data = request.get_json()
     return "<p>Logout page</p>"
 
 
 @app.get("/user/list")
 def user_list():
-    return "<p>Logout page</p>"
+    users = get_all_users()
+    return "<p>Logout page</p>" + str(users)
 
 
 @app.get("/user/delete/<user_id>")
@@ -65,7 +86,8 @@ def user_delete(user_id):
 
 @app.post("/user/update")
 def user_update():
-    return "<p>Logout page</p>"
+    data = request.get_json()
+    return "<p>Logout page</p>" + str(data)
 
 
 @app.get("/onlineusers")

@@ -25,11 +25,60 @@ def initialize_database():
                             host="localhost", port="5432")
     cur = conn.cursor()
     cur.execute(
-        '''CREATE TABLE IF NOT EXISTS userTable (
-        id SERIAL,
-        age INT,
-        name VARCHAR(100)
-        );'''
+        '''
+        CREATE TABLE IF NOT EXISTS userTable (
+        username VARCHAR NOT NULL UNIQUE,
+        firstname VARCHAR NOT NULL,
+        middlename VARCHAR,
+        lastname VARCHAR NOT NULL,
+        birthdate DATE,
+        email VARCHAR NOT NULL,
+        password VARCHAR NOT NULL
+        );
+        '''
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def add_user(data):
+    print(str(data))
+    print("username: " + str(data["username"]))
+
+    # parse the data
+    conn = psycopg2.connect(database="flask_db",
+                            user="postgres",
+                            password="1234",
+                            host="localhost", port="5432")
+    cur = conn.cursor()
+    cur.execute(
+        '''
+        INSERT INTO userTable (
+        username,
+        firstname,
+        middlename,
+        lastname,
+        birthdate,
+        email,
+        password )
+        VALUES
+        ('''
+        + ', '.join(
+            map(
+                lambda a: "'" + str(a) + "'",
+                [data["username"],
+                 data["firstname"],
+                 data["middlename"],
+                 data["lastname"],
+                 data["birthdate"],
+                 data["email"],
+                 data["password"]]
+            )
+
+        ) +
+        ''');
+        '''
     )
     conn.commit()
     cur.close()
@@ -70,6 +119,7 @@ def logout():
 @app.post("/user/create")
 def user_create():
     data = request.get_json()
+    add_user(data)
     return "<p>Logout page</p>"
 
 

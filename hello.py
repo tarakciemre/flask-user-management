@@ -25,6 +25,9 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = "myusertable"
 
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
     username: Mapped[str] = mapped_column(primary_key=True)
     firstname: Mapped[str] = mapped_column(String)
     middlename: Mapped[str] = mapped_column(String)
@@ -61,14 +64,16 @@ def update_user(user_id, data):
     session.commit()
     session.close()
 
+
 def get_all_users():
     session = Session(engine)
     temp = session.query(User).all()
     print(str(temp))
+    users_json = json.dumps(list(map(lambda a: a.as_dict(), temp)))
     session.flush()
     session.commit()
     session.close()
-    return temp
+    return users_json
 
 
 def delete_user(user_id):
@@ -100,8 +105,7 @@ def user_insert():
 @app.get("/user/list")
 def user_list():
     users = get_all_users()
-    users_json = dict_to_json(users)
-    return str(users_json)
+    return str(users)
 
 
 @app.get("/user/delete/<user_id>")

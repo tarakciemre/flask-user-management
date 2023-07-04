@@ -14,14 +14,13 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Session
 
-# Data imports
-from sqlalchemy import insert
 
 app = Flask(__name__)
 
-# This base object has a property called Base.metadata, and it takes care of the metadata management.
+
 class Base(DeclarativeBase):
     pass
+
 
 class User(Base):
     __tablename__ = "myusertable"
@@ -34,108 +33,19 @@ class User(Base):
     email: Mapped[str] = mapped_column(String)
     password: Mapped[str] = mapped_column(String)
 
-engine = create_engine("postgresql+psycopg2://postgres:1234@localhost:5432/flask_db", echo=True)
 
-# user_table = Table(
-#     "myusertable",
-#     metadata_obj,
-#     Column("username", String, primary_key=True),
-#     Column("firstname", String),
-#     Column("middlename", String, nullable=True),
-#     Column("lastname", String),
-#     Column("birthdate", String),
-#     Column("email", String),
-#     Column("password", String)
-# )
+engine = create_engine("postgresql+psycopg2://postgres:1234@localhost:5432/flask_db", echo=True)
 
 Base.metadata.create_all(engine)
 
-# stmt = insert("myusertable").values(username="Cenk", fullname="CENK")
-
-# with engine.connect() as conn:
-#     result = conn.execute(stmt)
-#     conn.commit()
-
-
-# DONE CREATE SESSION
-
-# session = Session(engine)
-
-# DONE CREATE USER
-# user_1 = User(
-#     username="Username_2",
-#     firstname="Username",
-#     middlename="Username",
-#     lastname="Username",
-#     birthdate="Username",
-#     email="Username",
-#     password="Username"
-# )
-
-# DONE ADD USER TO THE DATABASE
-# session.add(user_1)
-# session.flush() # applies the change in the active version of the database.
-# session.commit() # saves the changes to the database and makes them persist.
-# session.close()
-
-# CLOSE SESSION
-
-# [x] Create routes
-# [ ] /login
-# [ ] /logout
-# [ ] /user/list
-# [ ] /user/create
-# [ ] /user/delete/{id}
-# [ ] /user/update/{id}
-# [ ] /onlineusers
-
-# TODO FOR JUNE 03
-# DONE: Complete the database inserts and deletes
-# TODO: Use SQL Alchemy instead of pure SQL
-# TODO: Create a secure password saving with sha256 and salt
-
-userProperties = [
-    "username",
-    "firstname",
-    "middlename",
-    "lastname",
-    "birthdate",
-    "email",
-    "password"
-]
 
 def dict_to_json(arg):
     return json.dumps(arg, indent=4, sort_keys=True, default=str)
 
-def initialize_database():
-    conn = psycopg2.connect(database="flask_db",
-                            user="postgres",
-                            password="1234",
-                            host="localhost", port="5432")
-    cur = conn.cursor()
-    cur.execute(
-        '''
-        CREATE TABLE IF NOT EXISTS userTable (
-        username VARCHAR NOT NULL UNIQUE,
-        firstname VARCHAR NOT NULL,
-        middlename VARCHAR,
-        lastname VARCHAR NOT NULL,
-        birthdate DATE,
-        email VARCHAR NOT NULL,
-        password VARCHAR NOT NULL
-        );
-        '''
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
-
 
 def insert_user(data):
     sess = Session(engine)
-
     temp_user = User(**data)
-
     sess.add(temp_user)
     sess.flush()         # applies the change in the active version of the database.
     sess.commit()        # saves the changes to the database and makes them persist.
@@ -143,71 +53,31 @@ def insert_user(data):
 
 
 def update_user(user_id, data):
-    conn = psycopg2.connect(database="flask_db",
-                            user="postgres",
-                            password="1234",
-                            host="localhost", port="5432")
-    cur = conn.cursor()
-    print("DEBUG == " + str(data))
-    cur.execute(
-        '''
-        UPDATE userTable
-        SET 
-        '''
-        +
-        ', '.join({"" + str(k) + " = \'" + str(v) + "\'" for (k, v) in data.items()})
-        +
-        '''
-        WHERE username = \'''' + user_id + '''\'
-        '''
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
-
+    session = Session(engine)
+    temp = session.query(User).get(user_id)
+    for (k, v) in data.items():
+        setattr(temp, k, v)
+    session.flush()
+    session.commit()
+    session.close()
 
 def get_all_users():
-    conn = psycopg2.connect(database="flask_db",
-                            user="postgres",
-                            password="1234",
-                            host="localhost", port="5432")
-    cur = conn.cursor()
-    cur.execute(
-        '''
-        SELECT *
-        FROM userTable
-        '''
-    )
-    result = cur.fetchall()
-    print(str(result))
-    dict_result = list(map(lambda a: dict(zip(userProperties, a)), result))
-    print(str(dict_result))
-    print(dict_result)
-    conn.commit()
-    cur.close()
-    conn.close()
-    return dict_result
+    session = Session(engine)
+    temp = session.query(User).all()
+    print(str(temp))
+    session.flush()
+    session.commit()
+    session.close()
+    return temp
 
 
-def delete_user(id):
-    conn = psycopg2.connect(database="flask_db",
-                            user="postgres",
-                            password="1234",
-                            host="localhost", port="5432")
-    cur = conn.cursor()
-    cur.execute(
-        '''
-        DELETE 
-        FROM userTable
-        WHERE username = \'''' + id + '''\';
-        '''
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
-
-
-initialize_database()
+def delete_user(user_id):
+    session = Session(engine)
+    user_to_delete = session.query(User).get(user_id)
+    session.delete(user_to_delete)
+    session.flush()
+    session.commit()
+    session.close()
 
 
 @app.route("/login")
@@ -220,8 +90,8 @@ def logout():
     return "<p>Logout page</p>"
 
 
-@app.post("/user/create")
-def user_create():
+@app.post("/user/insert")
+def user_insert():
     data = request.get_json()
     insert_user(data)
     return "<p>Logout page</p>"

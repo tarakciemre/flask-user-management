@@ -7,11 +7,15 @@ from sqlalchemy import create_engine
 from sqlalchemy import Table, Column, String, Integer
 from sqlalchemy import MetaData
 
-#ORM
+# ORM
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import Session
+
+# Data imports
+from sqlalchemy import insert
 
 app = Flask(__name__)
 
@@ -45,6 +49,36 @@ engine = create_engine("postgresql+psycopg2://postgres:1234@localhost:5432/flask
 # )
 
 Base.metadata.create_all(engine)
+
+# stmt = insert("myusertable").values(username="Cenk", fullname="CENK")
+
+# with engine.connect() as conn:
+#     result = conn.execute(stmt)
+#     conn.commit()
+
+
+# DONE CREATE SESSION
+
+# session = Session(engine)
+
+# DONE CREATE USER
+# user_1 = User(
+#     username="Username_2",
+#     firstname="Username",
+#     middlename="Username",
+#     lastname="Username",
+#     birthdate="Username",
+#     email="Username",
+#     password="Username"
+# )
+
+# DONE ADD USER TO THE DATABASE
+# session.add(user_1)
+# session.flush() # applies the change in the active version of the database.
+# session.commit() # saves the changes to the database and makes them persist.
+# session.close()
+
+# CLOSE SESSION
 
 # [x] Create routes
 # [ ] /login
@@ -98,42 +132,14 @@ def initialize_database():
 
 
 def insert_user(data):
-    print(str(data))
-    print("username: " + str(data["username"]))
+    sess = Session(engine)
 
-    # parse the data
-    conn = psycopg2.connect(database="flask_db",
-                            user="postgres",
-                            password="1234",
-                            host="localhost", port="5432")
-    cur = conn.cursor()
-    cur.execute(
-        '''
-        INSERT INTO userTable (
-        username,
-        firstname,
-        middlename,
-        lastname,
-        birthdate,
-        email,
-        password )
-        VALUES
-        (
-        '''
-        + ', '.join(
-            map(
-                lambda a: "'" + str(a) + "'",
-                map(lambda a: data[a], userProperties)
-            )
+    temp_user = User(**data)
 
-        ) +
-        '''
-        );
-        '''
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
+    sess.add(temp_user)
+    sess.flush()         # applies the change in the active version of the database.
+    sess.commit()        # saves the changes to the database and makes them persist.
+    sess.close()
 
 
 def update_user(user_id, data):

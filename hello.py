@@ -1,6 +1,7 @@
 from flask import Flask
 from flask import request
 import psycopg2
+import json
 
 app = Flask(__name__)
 
@@ -17,6 +18,18 @@ app = Flask(__name__)
 # TODO: Complete the database inserts and deletes
 # TODO: Create a secure password saving with sha256 and salt
 
+userProperties = [
+    "username",
+    "firstname",
+    "middlename",
+    "lastname",
+    "birthdate",
+    "email",
+    "password"
+]
+
+def dict_to_json(arg):
+    return json.dumps(arg, indent=4, sort_keys=True, default=str)
 
 def initialize_database():
     conn = psycopg2.connect(database="flask_db",
@@ -42,7 +55,7 @@ def initialize_database():
     conn.close()
 
 
-def add_user(data):
+def insert_user(data):
     print(str(data))
     print("username: " + str(data["username"]))
 
@@ -63,21 +76,41 @@ def add_user(data):
         email,
         password )
         VALUES
-        ('''
+        (
+        '''
         + ', '.join(
             map(
                 lambda a: "'" + str(a) + "'",
-                [data["username"],
-                 data["firstname"],
-                 data["middlename"],
-                 data["lastname"],
-                 data["birthdate"],
-                 data["email"],
-                 data["password"]]
+                map(lambda a: data[a], userProperties)
             )
 
         ) +
-        ''');
+        '''
+        );
+        '''
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def update_user(user_id, data):
+    conn = psycopg2.connect(database="flask_db",
+                            user="postgres",
+                            password="1234",
+                            host="localhost", port="5432")
+    cur = conn.cursor()
+    print("DEBUG == " + str(data))
+    cur.execute(
+        '''
+        UPDATE userTable
+        SET 
+        '''
+        +
+        ', '.join({"" + str(k) + " = \'" + str(v) + "\'" for (k, v) in data.items()})
+        +
+        '''
+        WHERE username = \'''' + user_id + '''\'
         '''
     )
     conn.commit()
@@ -92,15 +125,37 @@ def get_all_users():
                             host="localhost", port="5432")
     cur = conn.cursor()
     cur.execute(
-        '''SELECT name
-        FROM usertable'''
+        '''
+        SELECT *
+        FROM userTable
+        '''
     )
     result = cur.fetchall()
-    print(result)
+    print(str(result))
+    dict_result = list(map(lambda a: dict(zip(userProperties, a)), result))
+    print(str(dict_result))
+    print(dict_result)
     conn.commit()
     cur.close()
     conn.close()
-    return result
+    return dict_result
+
+def delete_user(id):
+    conn = psycopg2.connect(database="flask_db",
+                            user="postgres",
+                            password="1234",
+                            host="localhost", port="5432")
+    cur = conn.cursor()
+    cur.execute(
+        '''
+        DELETE 
+        FROM userTable
+        WHERE username = \'''' + id + '''\';
+        '''
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
 initialize_database()
@@ -119,24 +174,27 @@ def logout():
 @app.post("/user/create")
 def user_create():
     data = request.get_json()
-    add_user(data)
+    insert_user(data)
     return "<p>Logout page</p>"
 
 
 @app.get("/user/list")
 def user_list():
     users = get_all_users()
-    return "<p>Logout page</p>" + str(users)
+    users_json = dict_to_json(users)
+    return str(users_json)
 
 
 @app.get("/user/delete/<user_id>")
 def user_delete(user_id):
+    delete_user(user_id)
     return "<p>Logout page </p>" + str(user_id)
 
 
-@app.post("/user/update")
-def user_update():
+@app.post("/user/update/<user_id>")
+def user_update(user_id):
     data = request.get_json()
+    update_user(user_id, data)
     return "<p>Logout page</p>" + str(data)
 
 

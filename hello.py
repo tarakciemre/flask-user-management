@@ -2,8 +2,49 @@ from flask import Flask
 from flask import request
 import psycopg2
 import json
+import sqlalchemy
+from sqlalchemy import create_engine
+from sqlalchemy import Table, Column, String, Integer
+from sqlalchemy import MetaData
+
+#ORM
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+from sqlalchemy.orm import DeclarativeBase
 
 app = Flask(__name__)
+
+# This base object has a property called Base.metadata, and it takes care of the metadata management.
+class Base(DeclarativeBase):
+    pass
+
+class User(Base):
+    __tablename__ = "myusertable"
+
+    username: Mapped[str] = mapped_column(primary_key=True)
+    firstname: Mapped[str] = mapped_column(String)
+    middlename: Mapped[str] = mapped_column(String)
+    lastname: Mapped[str] = mapped_column(String)
+    birthdate: Mapped[str] = mapped_column(String)
+    email: Mapped[str] = mapped_column(String)
+    password: Mapped[str] = mapped_column(String)
+
+engine = create_engine("postgresql+psycopg2://postgres:1234@localhost:5432/flask_db", echo=True)
+
+# user_table = Table(
+#     "myusertable",
+#     metadata_obj,
+#     Column("username", String, primary_key=True),
+#     Column("firstname", String),
+#     Column("middlename", String, nullable=True),
+#     Column("lastname", String),
+#     Column("birthdate", String),
+#     Column("email", String),
+#     Column("password", String)
+# )
+
+Base.metadata.create_all(engine)
 
 # [x] Create routes
 # [ ] /login
@@ -15,7 +56,8 @@ app = Flask(__name__)
 # [ ] /onlineusers
 
 # TODO FOR JUNE 03
-# TODO: Complete the database inserts and deletes
+# DONE: Complete the database inserts and deletes
+# TODO: Use SQL Alchemy instead of pure SQL
 # TODO: Create a secure password saving with sha256 and salt
 
 userProperties = [
@@ -139,6 +181,7 @@ def get_all_users():
     cur.close()
     conn.close()
     return dict_result
+
 
 def delete_user(id):
     conn = psycopg2.connect(database="flask_db",

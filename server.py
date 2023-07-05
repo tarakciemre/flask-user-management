@@ -61,7 +61,7 @@ class User(Base):
     middlename: Mapped[str] = mapped_column(String)
     lastname: Mapped[str] = mapped_column(String)
     birthdate: Mapped[str] = mapped_column(String)
-    email: Mapped[str] = mapped_column(String)
+    email: Mapped[str] = mapped_column(String, unique=True)
     password: Mapped[str] = mapped_column(String)
     salt: Mapped[str] = mapped_column(String)
 

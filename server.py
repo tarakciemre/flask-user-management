@@ -194,12 +194,27 @@ def delete_user(user_id):
     sess.commit()
     sess.close()
 
+def login(data):
+    sess = Session(engine)
+    if sess.query(User).get(data["username"]) == None:
+        return 10
+    user = sess.query(User).get(data["username"])
+    if user.password != encrypt_password(data["password"], user.salt):
+        return 11
+    return 0
 
 # === Routes ===
-@app.get("/login")
-def login():
-    session["name"] = "Emre"
-    return "<p>Login page</p>"
+@app.post("/login")
+def login_route():
+    data = request.get_json()
+    result = login(data)
+    if result == 10:
+        return "User does not exist"
+    if result == 11:
+        return "Wrong password"
+    if result == 0:
+        return "Login successful!"
+        session["name"] = "Emre"
 
 
 @app.route("/logout")
@@ -210,8 +225,8 @@ def logout():
 
 @app.post("/user/insert")
 def user_insert():
-    if not session.get("name"):
-        return "You got no session"
+    # if not session.get("name"):
+    #     return "You got no session"
     data = request.get_json()
     status = insert_user(data)
     if status == 0:

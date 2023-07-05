@@ -33,11 +33,11 @@ app = Flask(__name__)
 
 
 def encrypt_password(password, salt):
-    return bcrypt.hashpw(password.encode('utf-8'), salt)
+    return bcrypt.hashpw(password.encode('utf-8'), salt.encode('utf-8')).decode('utf-8')
 
 
 def generate_salt():
-    return bcrypt.gensalt()
+    return bcrypt.gensalt().decode('utf-8')
 
 
 def pyobj_to_json(arg):
@@ -102,11 +102,20 @@ def dict_to_json(arg):
     return json.dumps(arg, indent=4, sort_keys=True, default=str)
 
 
+
+def encrypt_and_salt_dictionary(arg):
+    arg['salt'] = generate_salt()
+    arg['password'] = encrypt_password(arg['password'], arg['salt'])
+    return arg
+
 # === Database interactions ===
 def insert_user(data):
     # Function log params
     endpoint = "insert"
-    body = str(data)
+
+    # Encrypt
+    encrypt_and_salt_dictionary(data)
+    body = json.dumps(data)
     status = 0
 
     sess = Session(engine)
@@ -192,10 +201,7 @@ def logout():
 
 @app.post("/user/insert")
 def user_insert():
-    print("======>>>> " + str(request.data))
     data = request.get_json()
-    data["salt"] = generate_salt()
-    data["password"] = encrypt_password(data["password"], data["salt"])
     insert_user(data)
     return "<p>Logout page</p>"
 

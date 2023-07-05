@@ -1,5 +1,6 @@
 from flask import Flask
 from flask import request
+from flask import session
 
 # Utils
 import json
@@ -30,7 +31,13 @@ from marshmallow_sqlalchemy import SQLAlchemySchema, auto_field, SQLAlchemyAutoS
 # Encryption
 import bcrypt
 
+# Session
+from flask_session import Session as FlaskSession
+
 app = Flask(__name__)
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_TYPE"] = "filesystem"
+FlaskSession(app)
 
 
 def encrypt_password(password, salt):
@@ -189,18 +196,22 @@ def delete_user(user_id):
 
 
 # === Routes ===
-@app.route("/login")
+@app.get("/login")
 def login():
+    session["name"] = "Emre"
     return "<p>Login page</p>"
 
 
 @app.route("/logout")
 def logout():
-    return "<p>Logout page</p>"
+    session["name"] = None
+    return "Logged out"
 
 
 @app.post("/user/insert")
 def user_insert():
+    if not session.get("name"):
+        return "You got no session"
     data = request.get_json()
     status = insert_user(data)
     if status == 0:
@@ -215,6 +226,8 @@ def user_insert():
 
 @app.get("/user/list")
 def user_list():
+    if not session.get("name"):
+        return "You got no session"
     users = get_all_users()
     return str(users)
 

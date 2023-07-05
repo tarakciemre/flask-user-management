@@ -1,9 +1,13 @@
 from flask import Flask
 from flask import request
-import psycopg2
+
+# Utils
 import json
 import datetime
+
+# Database Interaction
 import sqlalchemy
+import psycopg2
 from sqlalchemy import create_engine
 from sqlalchemy import Table, Column, String, Integer, DateTime
 from sqlalchemy import MetaData
@@ -17,6 +21,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm import relationship
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
+
+# Data serialization
+import marshmallow
+from marshmallow_sqlalchemy import SQLAlchemySchema, auto_field, SQLAlchemyAutoSchema
+
+# Encryption
 import bcrypt
 
 app = Flask(__name__)
@@ -31,11 +41,7 @@ def generate_salt():
 
 
 def pyobj_to_json(arg):
-    return json.dumps(list(map(lambda a: as_dict(a), arg)))
-
-
-def as_dict(input):
-    return {e: getattr(input, c.name) for k, v in vars(input).items()}
+    return json.dumps(list(map(lambda a: a.as_dict(), arg)))
 
 
 # Set up models
@@ -45,6 +51,9 @@ class Base(DeclarativeBase):
 
 class User(Base):
     __tablename__ = "myusertable"
+
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
     username: Mapped[str] = mapped_column(String, primary_key=True)
     firstname: Mapped[str] = mapped_column(String)
@@ -64,6 +73,21 @@ class Log(Base):
     body: Mapped[str] = mapped_column(String)
     timestamp: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+
+# Marshmallow serializer schemas
+class UserSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = User
+        load_instance = True  # Optional: deserialize to model instances
+
+
+class LogSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = Log
+        load_instance = True
+
+log_schema = LogSchema()
+user_schema = UserSchema()
 
 # Set up engine
 engine = create_engine("postgresql+psycopg2://postgres:1234@localhost:5432/flask_db", echo=True)
@@ -86,15 +110,20 @@ def insert_user(data):
     status = 0
 
     sess = Session(engine)
-    try:
-        temp_user = User(**data)
-        sess.add(temp_user)
-        sess.flush()         # applies the change in the active version of the database.
 
-    except SQLAlchemyError as e:
-        # error = str(e.__dict__['orig'])
-        status = 1
-        sess.rollback()
+    print("==============================" + str(sess.query(User).get(data["username"])))
+    if(sess.query(User).get(data["username"]) != None):
+        status = 2 # username already taken
+    ## Insert email checking logic
+    else:
+        try:
+            user = user_schema.load(json.loads(body), session=sess)
+            sess.add(user)
+            sess.flush()         # applies the change in the active version of the database.
+        except SQLAlchemyError as e:
+            # error = str(e.__dict__['orig'])
+            status = 1
+            sess.rollback()
 
     temp_log = Log(status=status, endpoint=endpoint, body=body)
     sess.add(temp_log)

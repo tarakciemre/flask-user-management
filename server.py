@@ -18,6 +18,7 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from sqlalchemy.orm import relationship
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
@@ -114,17 +115,16 @@ def insert_user(data):
     endpoint = "insert"
 
     # Encrypt
-    encrypt_and_salt_dictionary(data)
+    data = encrypt_and_salt_dictionary(data)
     body = json.dumps(data)
     status = 0
 
     sess = Session(engine)
-
-    print("==============================" + str(sess.query(User).get(data["username"])))
-    if(sess.query(User).get(data["username"]) != None):
-        status = 2 # username already taken
-    ## Insert email checking logic
-    else:
+    if sess.query(User).get(data["username"]) != None:
+        status = 2              # username already taken
+    elif len(sess.execute(select(User).where(User.email == data["email"])).all()) != 0:
+        status = 3              # email taken
+    else:           # uniqueness checks are successful
         try:
             user = user_schema.load(json.loads(body), session=sess)
             sess.add(user)
@@ -133,12 +133,12 @@ def insert_user(data):
             # error = str(e.__dict__['orig'])
             status = 1
             sess.rollback()
-
     temp_log = Log(status=status, endpoint=endpoint, body=body)
     sess.add(temp_log)
     sess.flush()
     sess.commit()
     sess.close()
+    return status
 
 
 
@@ -202,8 +202,15 @@ def logout():
 @app.post("/user/insert")
 def user_insert():
     data = request.get_json()
-    insert_user(data)
-    return "<p>Logout page</p>"
+    status = insert_user(data)
+    if status == 0:
+        return "Success!"
+    if status == 1:
+        return "Database error."
+    if status == 2:
+        return "User " + data["username"] + " already exists."
+    if status == 3:
+        return "Email " + data["email"] + " is already taken."
 
 
 @app.get("/user/list")

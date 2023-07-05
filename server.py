@@ -81,6 +81,11 @@ class Log(Base):
     body: Mapped[str] = mapped_column(String)
     timestamp: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+class Online(Base):
+    __tablename__ = "online"
+
+    user: Mapped["User"] = relationship()
+
 
 # Marshmallow serializer schemas
 class UserSchema(SQLAlchemyAutoSchema):
@@ -94,6 +99,11 @@ class LogSchema(SQLAlchemyAutoSchema):
         model = Log
         load_instance = True
 
+class OnlineSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = Online
+        load_instance = True
+
 log_schema = LogSchema()
 user_schema = UserSchema()
 
@@ -101,7 +111,7 @@ user_schema = UserSchema()
 engine = create_engine("postgresql+psycopg2://postgres:1234@localhost:5432/flask_db", echo=True)
 
 # Create tables if they do not already exist
-Base.metadata.drop_all(engine)
+# Base.metadata.drop_all(engine)
 Base.metadata.create_all(engine)
 
 

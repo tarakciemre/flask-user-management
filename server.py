@@ -181,19 +181,12 @@ def get_all_users():
     endpoint = "/users/list"
 
     sess = Session(engine)
-    temp = sess.query(User).with_entities(
-        User.username,
-        User.firstname,
-        User.middlename,
-        User.lastname,
-        User.birthdate,
-        User.email)
-    print(str(temp))
-    users_json = pyobj_to_json(temp)
+    temp = sess.query(User).all()
+    tmp = UserSchema(many=True).dumps(temp)
     sess.flush()
     sess.commit()
     sess.close()
-    return users_json
+    return tmp
 
 
 def delete_user(user_id):

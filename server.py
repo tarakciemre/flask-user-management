@@ -19,6 +19,7 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Session
+from sqlalchemy import ForeignKey
 from sqlalchemy import select
 from sqlalchemy.orm import relationship
 from sqlalchemy import func
@@ -72,6 +73,7 @@ class User(Base):
     password: Mapped[str] = mapped_column(String)
     salt: Mapped[str] = mapped_column(String)
 
+
 class Log(Base):
     __tablename__ = "log"
 
@@ -81,10 +83,11 @@ class Log(Base):
     body: Mapped[str] = mapped_column(String)
     timestamp: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+
 class Online(Base):
     __tablename__ = "online"
 
-    user: Mapped["User"] = relationship()
+    username: Mapped["User"] = mapped_column(ForeignKey("myusertable"), primary_key=True)
 
 
 # Marshmallow serializer schemas
@@ -106,6 +109,7 @@ class OnlineSchema(SQLAlchemyAutoSchema):
 
 log_schema = LogSchema()
 user_schema = UserSchema()
+online_schema = OnlineSchema()
 
 # Set up engine
 engine = create_engine("postgresql+psycopg2://postgres:1234@localhost:5432/flask_db", echo=True)
@@ -156,7 +160,6 @@ def insert_user(data):
     sess.commit()
     sess.close()
     return status
-
 
 
 def update_user(user_id, data):
@@ -272,4 +275,5 @@ def user_update(user_id):
 
 @app.get("/onlineusers")
 def online_users():
-    return "<p>Online Users</p>"
+    users = get_online_users()
+    return users

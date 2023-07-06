@@ -222,6 +222,21 @@ def login(data):
     sess.close()
     return 0
 
+
+def get_online_users():
+    print("====>>> GET_ONLINE_USERS LOG ======<<<<<")
+    sess = Session(engine)
+    temp = sess.query(Online).all()
+    print("temp: " + str(temp))
+    tmp = OnlineSchema(many=True).dumps(temp)
+    print("temp: " + str(tmp))
+    sess.flush()
+    sess.commit()
+    sess.close()
+    print("====>>> GET_ONLINE_USERS END ======<<<<<")
+    return tmp
+
+
 # === Routes ===
 @app.post("/login")
 def login_route():

@@ -202,13 +202,24 @@ def delete_user(user_id):
     sess.commit()
     sess.close()
 
+
 def login(data):
     sess = Session(engine)
     if sess.query(User).get(data["username"]) == None:
+        sess.close()
         return 10
     user = sess.query(User).get(data["username"])
     if user.password != encrypt_password(data["password"], user.salt):
+        sess.close()
         return 11
+    try:
+        online = Online(username=data["username"], ipaddress=data["ipaddress"])
+        sess.add(online)
+        sess.flush()  # applies the change in the active version of the database.
+        sess.commit()
+    except SQLAlchemyError as e:
+        sess.rollback()
+    sess.close()
     return 0
 
 # === Routes ===

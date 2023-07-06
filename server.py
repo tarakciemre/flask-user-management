@@ -87,7 +87,9 @@ class Log(Base):
 class Online(Base):
     __tablename__ = "online"
 
-    username: Mapped["User"] = mapped_column(ForeignKey("myusertable"), primary_key=True)
+    username: Mapped[User] = mapped_column(ForeignKey("myusertable"), primary_key=True)
+    ipaddress: Mapped[str] = mapped_column(String)
+    logindatetime: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 # Marshmallow serializer schemas
@@ -102,10 +104,12 @@ class LogSchema(SQLAlchemyAutoSchema):
         model = Log
         load_instance = True
 
+
 class OnlineSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = Online
         load_instance = True
+
 
 log_schema = LogSchema()
 user_schema = UserSchema()
@@ -115,7 +119,7 @@ online_schema = OnlineSchema()
 engine = create_engine("postgresql+psycopg2://postgres:1234@localhost:5432/flask_db", echo=True)
 
 # Create tables if they do not already exist
-# Base.metadata.drop_all(engine)
+Base.metadata.drop_all(engine)
 Base.metadata.create_all(engine)
 
 

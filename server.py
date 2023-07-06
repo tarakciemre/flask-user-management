@@ -242,6 +242,8 @@ def get_online_users():
 def login_route():
     data = request.get_json()
     result = login(data)
+    # if session.get("name") is not None:
+    #     return "Already logged in"
     if result == 10:
         return "User does not exist"
     if result == 11:
@@ -253,7 +255,7 @@ def login_route():
 
 @app.route("/logout")
 def logout():
-    session["name"] = None
+    session.pop("name")
     return "Logged out"
 
 
@@ -275,10 +277,11 @@ def user_insert():
 
 @app.get("/user/list")
 def user_list():
-    if not session.get("name"):
-        return "You got no session"
+    # if session.get("name") is None:
+    #     return "You got no session"
     users = get_all_users()
     return str(users)
+    # return "Dummy user list"
 
 
 @app.get("/user/delete/<user_id>")

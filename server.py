@@ -128,20 +128,18 @@ def dict_to_json(arg):
     return json.dumps(arg, indent=4, sort_keys=True, default=str)
 
 
-
 def encrypt_and_salt_dictionary(arg):
     arg['salt'] = generate_salt()
     arg['password'] = encrypt_password(arg['password'], arg['salt'])
-    return arg
 
-# === Database interactions ===
+
+# ==== DATABASE INTERACTIONS ========
 def insert_user(data):
     # Function log params
     endpoint = "insert"
 
     # Encrypt
-    data = encrypt_and_salt_dictionary(data)
-    body = json.dumps(data)
+    encrypt_and_salt_dictionary(data)
     status = 0
 
     sess = Session(engine)
@@ -151,14 +149,14 @@ def insert_user(data):
         status = 3              # email taken
     else:           # uniqueness checks are successful
         try:
-            user = user_schema.load(json.loads(body), session=sess)
+            user = User(**data)
             sess.add(user)
             sess.flush()         # applies the change in the active version of the database.
         except SQLAlchemyError as e:
             # error = str(e.__dict__['orig'])
             status = 1
             sess.rollback()
-    temp_log = Log(status=status, endpoint=endpoint, body=body)
+    temp_log = Log(status=status, endpoint=endpoint, body=json.dumps(data))
     sess.add(temp_log)
     sess.flush()
     sess.commit()

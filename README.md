@@ -1,6 +1,6 @@
 # Flask Web Application
 
-A Flask JSON API with PostgreSQL database.
+A Flask REST API with PostgreSQL database.
 
 # Log
 ## 03.07.2023 - Day 1

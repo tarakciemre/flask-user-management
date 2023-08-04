@@ -116,7 +116,7 @@ user_schema = UserSchema()
 online_schema = OnlineSchema()
 
 # Set up engine
-engine = create_engine("postgresql+psycopg2://postgres:1234@localhost:5432/flask_db", echo=True)
+engine = create_engine("postgresql+psycopg2://postgres:1234@postgres:5432/flask_db", echo=True)
 
 # Create tables if they do not already exist
 Base.metadata.drop_all(engine)
